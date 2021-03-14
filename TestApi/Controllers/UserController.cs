@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.VisualStudio.Web.CodeGeneration.Contracts.Messaging;
@@ -107,6 +108,12 @@ namespace TestApi.Controllers
             u.Password = "";
 
             return Ok(u);
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<User>>> GetUser()
+        {
+            return await _db.Users.ToListAsync();
         }
 
         [HttpPost("CreateUser")]
