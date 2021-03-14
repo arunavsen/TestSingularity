@@ -15,7 +15,7 @@ using TestApi.Models;
 
 namespace TestApi.Controllers
 {
-    [Authorize]
+    [Authorize("Admin")]
     [Route("api/[controller]")]
     [ApiController]
     public class UserController : ControllerBase
@@ -106,6 +106,32 @@ namespace TestApi.Controllers
 
             u.Password = "";
 
+            return Ok(u);
+        }
+
+        [HttpPost("CreateUser")]
+        public IActionResult CreateUser([FromBody] User model)
+        {
+            var user = _db.Users.SingleOrDefault(m => m.UserName == model.UserName);
+
+            var isUserUnique = user == null ? true : false;
+
+            if (!isUserUnique)
+            {
+                return BadRequest("Username is already exist");
+            }
+
+            var u = new User()
+            {
+                UserName = model.UserName,
+                Password = model.Password,
+                Role = model.Role
+            };
+
+            _db.Users.Add(u);
+            _db.SaveChangesAsync();
+
+            model.Password = "";
             return Ok(u);
         }
     }
