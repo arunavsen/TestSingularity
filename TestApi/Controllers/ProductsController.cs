@@ -121,7 +121,7 @@ namespace TestApi.Controllers
                 return NotFound();
             }
 
-            product.LockStatus = product.LockStatus = false;
+            product.LockStatus = product.LockStatus != true;
             await _context.SaveChangesAsync();
 
             return product;
@@ -136,8 +136,8 @@ namespace TestApi.Controllers
                 return NotFound();
             }
 
-            product.DeleteStatus = true;
-            product.LockStatus = true;
+            product.DeleteStatus = false;
+            product.LockStatus = false;
 
             await _context.SaveChangesAsync();
             return Ok();

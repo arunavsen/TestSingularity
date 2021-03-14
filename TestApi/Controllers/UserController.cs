@@ -16,7 +16,7 @@ using TestApi.Models;
 
 namespace TestApi.Controllers
 {
-    [Authorize("Admin")]
+    [Authorize(Roles = "Admin")]
     [Route("api/[controller]")]
     [ApiController]
     public class UserController : ControllerBase
