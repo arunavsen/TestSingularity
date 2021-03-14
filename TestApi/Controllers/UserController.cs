@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.VisualStudio.Web.CodeGeneration.Contracts.Messaging;
 using TestApi.Models;
 
 namespace TestApi.Controllers
@@ -59,6 +60,32 @@ namespace TestApi.Controllers
             user.Password = "";
 
             return Ok(user);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("register")]
+        public IActionResult Register([FromBody] User model)
+        {
+            var user = _db.Users.SingleOrDefault(u => u.UserName == model.UserName);
+            var isUserNameUnique = user == null ? true : false;
+
+            if (!isUserNameUnique)
+            {
+                return BadRequest(new {Message = "Username already exist"});
+            }
+
+            var u = new User()
+            {
+                UserName = model.UserName,
+                Password = model.Password
+            };
+
+            _db.Users.Add(u);
+            _db.SaveChanges();
+
+            u.Password = "";
+
+            return Ok(u);
         }
     }
 }
