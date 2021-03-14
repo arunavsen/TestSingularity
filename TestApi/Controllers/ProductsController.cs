@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +12,7 @@ using TestApi.Models;
 
 namespace TestApi.Controllers
 {
+    [Authorize(Roles = "Admin")]
     [Route("api/[controller]")]
     [ApiController]
     public class ProductsController : ControllerBase
@@ -20,20 +24,19 @@ namespace TestApi.Controllers
             _context = context;
         }
 
-        // GET: api/Products
+        [AllowAnonymous]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
         {
-            return await _context.Products.ToListAsync();
+            return await _context.Products.Where(p=>p.DeleteStatus == false).ToListAsync();
         }
 
-        // GET: api/Products/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Product>> GetProduct(int id)
         {
             var product = await _context.Products.FindAsync(id);
 
-            if (product == null)
+            if (product == null || product.DeleteStatus == true)
             {
                 return NotFound();
             }
@@ -41,13 +44,17 @@ namespace TestApi.Controllers
             return product;
         }
 
-        // PUT: api/Products/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
         [HttpPut("{id}")]
         public async Task<IActionResult> PutProduct(int id, Product product)
         {
             if (id != product.Id)
+            {
+                return BadRequest();
+            }
+
+            // If the product's Deleted or Locked, we can not edit that.
+            var p = await _context.Products.FirstOrDefaultAsync(m => m.Id == id);
+            if (p.DeleteStatus == true || p.LockStatus==true)
             {
                 return BadRequest();
             }
@@ -73,9 +80,6 @@ namespace TestApi.Controllers
             return NoContent();
         }
 
-        // POST: api/Products
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
         [HttpPost]
         public async Task<ActionResult<Product>> PostProduct(Product product)
         {
@@ -85,9 +89,46 @@ namespace TestApi.Controllers
             return CreatedAtAction("GetProduct", new { id = product.Id }, product);
         }
 
-        // DELETE: api/Products/5
+        // DeleteStatus action
         [HttpDelete("{id}")]
         public async Task<ActionResult<Product>> DeleteProduct(int id)
+        {
+            // This will return only that product which has the false DeleteStatus. It is OK product.
+            var product = await _context.Products.FirstOrDefaultAsync(x=>x.DeleteStatus != true && x.Id == id);
+            if (product == null)
+            {
+                return NotFound();
+            }
+
+            // As we can not delete any product, we have to lock the product. If LockStatus is true, that means you can not delete that product.
+            if (product.LockStatus == true)
+            {
+                return BadRequest();
+            }
+
+            product.DeleteStatus = true;
+            await _context.SaveChangesAsync();
+
+            return product;
+        }
+
+        [HttpPost("LockProduct/{id}")]
+        public async Task<ActionResult<Product>> LockProduct(int id)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product == null || product.DeleteStatus == true)
+            {
+                return NotFound();
+            }
+
+            product.LockStatus = product.LockStatus = false;
+            await _context.SaveChangesAsync();
+
+            return product;
+        }
+
+        [HttpPost("RecoverProduct/{id}")]
+        public async Task<ActionResult<Product>> RecoverProduct(int id)
         {
             var product = await _context.Products.FindAsync(id);
             if (product == null)
@@ -95,10 +136,17 @@ namespace TestApi.Controllers
                 return NotFound();
             }
 
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+            product.DeleteStatus = true;
+            product.LockStatus = true;
 
-            return product;
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        [HttpGet("GetTrashProducts")]
+        public async Task<ActionResult<IEnumerable<Product>>> GetTrashProducts()
+        {
+            return await _context.Products.Where(m => m.DeleteStatus == true).ToListAsync();
         }
 
         private bool ProductExists(int id)

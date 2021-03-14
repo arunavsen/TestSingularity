@@ -10,5 +10,7 @@ namespace TestApi.Models
         public int Id { get; set; }
         public string Name { get; set; }
         public double Price { get; set; }
+        public Boolean DeleteStatus { get; set; }
+        public Boolean LockStatus { get; set; }
     }
 }
