@@ -134,5 +134,23 @@ namespace TestApi.Controllers
             model.Password = "";
             return Ok(u);
         }
+
+        [HttpDelete("RemoveUser/{id}")]
+        public async Task<ActionResult<User>> RemoveUser(int id)
+        {
+            var user = await _db.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+
+            _db.Users.Remove(user);
+            await _db.SaveChangesAsync();
+
+            return user;
+
+        }
+
     }
 }
