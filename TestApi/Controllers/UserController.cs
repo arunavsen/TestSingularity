@@ -13,6 +13,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.VisualStudio.Web.CodeGeneration.Contracts.Messaging;
 using TestApi.Models;
+using TestApi.Models.DTO;
 
 namespace TestApi.Controllers
 {
@@ -117,7 +118,7 @@ namespace TestApi.Controllers
         }
 
         [HttpPost("CreateUser")]
-        public IActionResult CreateUser([FromBody] User model)
+        public IActionResult CreateUser([FromBody] RegisterDto model)
         {
             var user = _db.Users.SingleOrDefault(m => m.UserName == model.UserName);
 
@@ -136,7 +137,7 @@ namespace TestApi.Controllers
             };
 
             _db.Users.Add(u);
-            _db.SaveChangesAsync();
+            _db.SaveChanges();
 
             model.Password = "";
             return Ok(u);
